@@ -117,6 +117,7 @@ html.lens-lock,html.lens-lock body{overflow:hidden}
 #ado3d canvas{display:block;width:100%;height:100%;outline:none}
 #ado3d .hint{position:absolute;left:0;right:0;bottom:-4px;text-align:center;font:600 11px/1 system-ui,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#fff;text-shadow:0 1px 4px #000a;opacity:.8;pointer-events:none;transition:opacity .6s}
 #ado3d.touched .hint{opacity:0}
+@media (max-width:736px){#ado3d{left:0;top:auto;bottom:0;transform:none;width:42vw;max-width:200px;height:34vh;max-height:260px;touch-action:pan-y}#ado3d .hint{display:none}#ado3d-credit{font-size:9px}}
 #ado3d-credit{position:fixed;right:8px;bottom:6px;z-index:10;font:10px/1.2 system-ui,sans-serif;color:#fff;opacity:.55;text-shadow:0 1px 3px #000}
 #ado3d-credit a{color:inherit}
 </style><style id="soft-scroll-css">
@@ -724,15 +725,20 @@ O.minPolarAngle=0;O.maxPolarAngle=Math.PI; // full rotation, any angle
 var resume;
 O.addEventListener('start',function(){box.classList.add('touched');O.autoRotate=false;clearTimeout(resume)});
 O.addEventListener('end',function(){resume=setTimeout(function(){O.autoRotate=true},2500)});
-function size(){var w=box.clientWidth,h=box.clientHeight;R.setSize(w,h);C.aspect=w/h;C.updateProjectionMatrix()}
-addEventListener('resize',size);size();
+var dim=null;
+function fit(){if(!dim)return;var t=Math.tan(C.fov*Math.PI/360),d=Math.max(dim.y/2/t,dim.x/2/(t*C.aspect))*1.12+dim.z/2,v=C.position.clone().normalize();if(!isFinite(v.length())||C.position.length()<.001)v.set(0,0,1);C.position.copy(v.multiplyScalar(d));}
+function size(){var w=box.clientWidth||1,h=box.clientHeight||1;R.setSize(w,h);C.aspect=w/h;C.updateProjectionMatrix();fit();O.update()}
+R.domElement.style.touchAction=matchMedia('(max-width:736px)').matches?'pan-y':'none';
+addEventListener('resize',function(){R.domElement.style.touchAction=matchMedia('(max-width:736px)').matches?'pan-y':'none';size()});
+addEventListener('orientationchange',function(){setTimeout(size,250)});
+R.domElement.addEventListener('webglcontextlost',function(e){e.preventDefault()});
+size();
 new THREE.GLTFLoader().load('ado3d/scene.gltf',function(g){
  var m=g.scene;
  m.traverse(function(o){if(o.isMesh){var a=o.material;a.metalnessMap=null;a.metalness=0;a.roughness=.85;if(a.map)a.map.encoding=THREE.sRGBEncoding;a.needsUpdate=true}});
  var b=new THREE.Box3().setFromObject(m),c=b.getCenter(new THREE.Vector3()),z=b.getSize(new THREE.Vector3());
  m.position.sub(c);S.add(m);
- var d=Math.max(z.y/2/Math.tan(C.fov*Math.PI/360),z.x/2/Math.tan(C.fov*Math.PI/360)/C.aspect)*1.15+z.z/2;
- C.position.set(0,0,d);O.update();
+ dim=z;C.position.set(0,0,1);size();
  box.style.opacity=0;box.style.transition='opacity .8s';requestAnimationFrame(function(){box.style.opacity=1});
 },undefined,function(e){console.error('Ado model failed to load (serve over http, not file://)',e)});
 (function loop(){requestAnimationFrame(loop);O.update();R.render(S,C)})();
