@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>Art management</title>
+<style>
+:root{--bg:#4f4f4f;--panel:rgba(54,53,53,.94);--card:rgba(36,36,36,.949);--field:rgba(23,23,23,.6);--line:rgba(0,0,0,.478);--ink:#fff;--mute:rgba(255,255,255,.62);--faint:rgba(255,255,255,.4);--ok:#8fe3a7;--bad:#ff9aa8;--font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;}
+*{box-sizing:border-box;}
+html,body{margin:0;min-height:100%;}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--font);letter-spacing:.05rem;}
+[hidden]{display:none !important;}
+h1,h2{margin:0;font-weight:700;letter-spacing:.08rem;}
+h1{font-size:1.3rem;}
+h2{font-size:1.1rem;}
+a{color:inherit;}
+.wrap{max-width:48rem;margin:0 auto;padding:2rem 1rem 4rem;}
+.panel{background:var(--panel);border-radius:2.5rem 0 2.5rem 2.5rem;padding:2rem;}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;}
+.bar-actions{display:flex;align-items:center;gap:1rem;}
+.link{font-size:.85rem;color:var(--mute);}
+.link:hover{color:var(--ink);}
+.hint{margin:0;font-size:.75rem;color:var(--faint);}
+.msg{min-height:1.4em;margin:.75rem 0 0;font-size:.85rem;color:var(--bad);text-align:center;}
+
+/* buttons: same look as the site (dark pill, white + gradient text on hover) */
+.btn{display:inline-flex;align-items:center;justify-content:center;height:2.5rem;padding:0 1.25rem;border:0;border-radius:1rem;background:rgba(23,23,23,.6);color:#fff;font:inherit;font-size:.9rem;letter-spacing:.12rem;cursor:pointer;transition:background-color .25s ease,opacity .25s ease;white-space:nowrap;}
+.btn.small{height:2rem;padding:0 .9rem;font-size:.78rem;letter-spacing:.06rem;}
+.btn.ghost{background:transparent;box-shadow:inset 0 0 0 2px rgba(255,255,255,.18);}
+.btn:hover:not(:disabled){background:rgba(255,255,255,.92);}
+.btn:hover:not(:disabled) .label{background:linear-gradient(90deg,#850071,#0c06a1,#850071);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:flow 3s linear infinite;}
+.btn:disabled{opacity:.5;cursor:default;}
+.btn:focus-visible,.ratio:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid rgba(255,255,255,.6);outline-offset:2px;}
+@keyframes flow{from{background-position:0% 50%;}to{background-position:200% 50%;}}
+
+input[type=text],input[type=password],textarea{width:100%;border:2px solid var(--line);border-radius:1rem;background:var(--field);color:rgba(255,255,255,.92);font:inherit;font-size:.9rem;letter-spacing:.04rem;padding:.7rem 1rem;outline:none;transition:border-color .25s ease;}
+input[type=text]:focus,input[type=password]:focus,textarea:focus{border-color:#850071;}
+textarea{resize:vertical;min-height:7rem;}
+::placeholder{color:var(--faint);}
+
+/* login */
+#login{max-width:24rem;margin:12vh auto 0;text-align:center;}
+#login h1{margin-bottom:1.25rem;}
+#loginForm{display:flex;flex-direction:column;gap:.75rem;}
+
+/* library */
+.toolbar{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1.25rem;}
+.list{display:flex;flex-direction:column;gap:.75rem;}
+.empty{padding:2rem 1rem;text-align:center;color:var(--faint);font-size:.9rem;}
+.item{display:flex;align-items:center;gap:1rem;padding:1rem;border-radius:1.25rem;background:var(--card);}
+.item.hiddenart{opacity:.62;}
+.thumb{flex:0 0 auto;width:5.5rem;border:2px solid var(--line);border-radius:.75rem;overflow:hidden;background:rgba(255,255,255,.08);line-height:0;}
+.thumb img{display:block;width:100%;height:auto;max-height:7.5rem;object-fit:cover;}
+.info{flex:1 1 0;min-width:0;}
+.info .t{font-weight:700;font-size:.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.info .d{font-size:.78rem;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.badge{display:inline-block;margin-left:.5rem;padding:0 .5rem;border-radius:1rem;background:rgba(255,255,255,.12);font-size:.65rem;font-weight:400;letter-spacing:.05rem;vertical-align:middle;}
+.acts{display:flex;flex-wrap:wrap;gap:.4rem;justify-content:flex-end;max-width:15rem;}
+@media (max-width:620px){.panel{padding:1.25rem;border-radius:1.75rem 0 1.75rem 1.75rem;}.item{flex-wrap:wrap;}.acts{max-width:none;width:100%;justify-content:flex-start;}}
+
+/* editor */
+.modal{position:fixed;left:0;top:0;width:100%;height:100%;z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:1rem;background:rgba(8,8,12,.82);overflow:auto;}
+.sheet{width:100%;max-width:56rem;margin:auto;padding:1.5rem;border-radius:2rem 0 2rem 2rem;background:#2b2b2d;}
+.sheet h2{margin-bottom:1rem;}
+.ed-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:1.25rem;}
+@media (max-width:760px){.ed-grid{grid-template-columns:1fr;}}
+.stage{position:relative;width:100%;height:min(52vh,420px);overflow:hidden;border-radius:1rem;background:#111;touch-action:none;cursor:grab;user-select:none;}
+.stage.grabbing{cursor:grabbing;}
+.stage img{position:absolute;left:0;top:0;max-width:none;transform-origin:0 0;pointer-events:none;user-select:none;}
+.frame{position:absolute;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,.62);outline:2px solid rgba(255,255,255,.9);}
+.ratios{display:flex;flex-wrap:wrap;gap:.4rem;margin:.75rem 0;}
+.ratio{height:2rem;padding:0 .8rem;border:0;border-radius:1rem;background:rgba(255,255,255,.08);color:#fff;font:inherit;font-size:.78rem;cursor:pointer;transition:background-color .2s ease;}
+.ratio[aria-pressed=true]{background:#850071;}
+.zoom{display:flex;align-items:center;gap:.75rem;font-size:.85rem;color:var(--mute);}
+.zoom input{flex:1;accent-color:#db2589;}
+.ed-right{display:flex;flex-direction:column;gap:.9rem;}
+.ed-right label{display:flex;flex-direction:column;gap:.35rem;font-size:.82rem;color:var(--mute);}
+.ed-right label.check{flex-direction:row;align-items:center;gap:.6rem;color:var(--ink);}
+.ed-right input[type=checkbox]{width:1.1rem;height:1.1rem;accent-color:#db2589;}
+.ed-actions{display:flex;justify-content:flex-end;gap:.75rem;margin-top:1.25rem;}
+.toast{position:fixed;left:50%;bottom:1.25rem;z-index:80;transform:translate(-50%,160%);padding:.7rem 1.1rem;border-radius:1rem;background:#1b1b1d;color:var(--ok);font-size:.85rem;box-shadow:0 6px 24px rgba(0,0,0,.4);transition:transform .3s ease;max-width:92vw;}
+.toast.show{transform:translate(-50%,0);}
+.toast.err{color:var(--bad);}
+@media (prefers-reduced-motion:reduce){.btn:hover:not(:disabled) .label{animation:none;}.toast{transition:none;}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <section id="login" class="panel">
+    <h1>Art management</h1>
+    <form id="loginForm" autocomplete="off">
+      <input id="pw" type="password" placeholder="Password" autocomplete="current-password" required>
+      <button class="btn" type="submit"><span class="label">Enter</span></button>
+      <p id="loginMsg" class="msg" role="alert"></p>
+    </form>
+  </section>
+
+  <section id="dash" class="panel" hidden>
+    <header class="bar">
+      <h1>Art management</h1>
+      <div class="bar-actions"><a class="link" href="/" target="_blank" rel="noopener">View site</a><button id="logout" class="btn small" type="button"><span class="label">Log out</span></button></div>
+    </header>
+    <div class="toolbar">
+      <button id="addBtn" class="btn" type="button"><span class="label">+ Upload art</span></button>
+      <input id="fileInput" type="file" accept="image/*" hidden>
+      <p class="hint">Or drop an image anywhere on this page. Newest art goes to the top of your Arts page.</p>
+    </div>
+    <div id="list" class="list"></div>
+  </section>
+</main>
+
+<div id="editor" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="edTitle">
+  <div class="sheet">
+    <h2 id="edTitle">Upload art</h2>
+    <div class="ed-grid">
+      <div>
+        <div id="stage" class="stage"><img id="stageImg" alt="" draggable="false"><div id="frame" class="frame"></div></div>
+        <div id="ratios" class="ratios" role="group" aria-label="Crop shape">
+          <button class="ratio" type="button" data-r="orig" aria-pressed="true">Original</button>
+          <button class="ratio" type="button" data-r="1:1" aria-pressed="false">Square</button>
+          <button class="ratio" type="button" data-r="4:5" aria-pressed="false">Portrait 4:5</button>
+          <button class="ratio" type="button" data-r="3:4" aria-pressed="false">3:4</button>
+          <button class="ratio" type="button" data-r="16:9" aria-pressed="false">Wide 16:9</button>
+          <button class="ratio" type="button" data-r="3:1" aria-pressed="false">Banner 3:1</button>
+        </div>
+        <label class="zoom">Zoom <input id="zoom" type="range" min="1" max="4" step="0.01" value="1" aria-label="Zoom"></label>
+        <p class="hint" style="margin-top:.5rem">Drag the picture to choose what shows. Scroll or use the slider to zoom.</p>
+      </div>
+      <div class="ed-right">
+        <label>Title<input id="fTitle" type="text" maxlength="120" placeholder="Optional"></label>
+        <label>Description<textarea id="fDesc" maxlength="2000" placeholder="Optional"></textarea></label>
+        <label class="check"><input id="fPub" type="checkbox" checked> Show on the website</label>
+        <div><button id="replaceBtn" class="btn small" type="button" hidden><span class="label">Replace image</span></button><input id="replaceInput" type="file" accept="image/*" hidden></div>
+      </div>
+    </div>
+    <div class="ed-actions">
+      <button id="edCancel" class="btn ghost" type="button"><span class="label">Cancel</span></button>
+      <button id="edSave" class="btn" type="button"><span class="label">Save</span></button>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  /* ===== SETTINGS: paste your two Supabase values (see SETUP.md) ===== */
+  var SUPABASE_URL = "https://YOUR-PROJECT-ID.supabase.co";
+  var SUPABASE_KEY = "YOUR-PUBLISHABLE-KEY";
+  var ADMIN_EMAIL = "jinx@is-a-kitty.cat";   /* the login account; the password only lives in Supabase */
+
+  var PUBLIC_BUCKET = "arts", ORIGINALS_BUCKET = "arts-originals", MAX_SIDE = 1600, MAX_BYTES = 25 * 1024 * 1024;
+  var base = SUPABASE_URL.replace(/\/$/, "");
+  var configured = SUPABASE_URL.indexOf("YOUR-") < 0 && SUPABASE_KEY.indexOf("YOUR-") < 0;
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* ---------- tiny helpers ---------- */
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  var toastTimer;
+  function toast(msg, bad) {
+    var t = $("toast"); t.textContent = msg; t.className = "toast show" + (bad ? " err" : "");
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.className = "toast" + (bad ? " err" : ""); }, 3800);
+  }
+  function encPath(p) { return String(p).split("/").map(encodeURIComponent).join("/"); }
+  function publicUrl(path) { return base + "/storage/v1/object/public/" + PUBLIC_BUCKET + "/" + encPath(path); }
+  function extFor(file) {
+    var m = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif", "image/avif": "avif" };
+    return m[file.type] || (file.name.split(".").pop() || "img").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "img";
+  }
+
+  /* ---------- session (kept only while this tab is open) ---------- */
+  var session = null;
+  try { session = JSON.parse(sessionStorage.getItem("dc_art_session") || "null"); } catch (e) {}
+  function setSession(j) {
+    session = j ? { access_token: j.access_token, refresh_token: j.refresh_token, expires_at: j.expires_at || (Math.floor(Date.now() / 1000) + (j.expires_in || 3600)) } : null;
+    try { if (session) sessionStorage.setItem("dc_art_session", JSON.stringify(session)); else sessionStorage.removeItem("dc_art_session"); } catch (e) {}
+  }
+  async function ensureFresh() {
+    if (!session || session.expires_at * 1000 - Date.now() > 60000) return;
+    var r = await fetch(base + "/auth/v1/token?grant_type=refresh_token", { method: "POST", headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ refresh_token: session.refresh_token }) });
+    if (!r.ok) { signOut("Your session ended. Please log in again."); throw new Error("Session ended"); }
+    setSession(await r.json());
+  }
+  async function api(path, opts) {
+    await ensureFresh();
+    opts = opts || {};
+    var h = Object.assign({ apikey: SUPABASE_KEY }, opts.headers || {});
+    if (session) h.Authorization = "Bearer " + session.access_token;
+    var r = await fetch(base + path, Object.assign({}, opts, { headers: h }));
+    if (r.status === 401) { signOut("Your session ended. Please log in again."); throw new Error("Session ended"); }
+    if (!r.ok) {
+      var txt = ""; try { txt = await r.text(); } catch (e) {}
+      var msg = ""; try { var j = JSON.parse(txt); msg = j.message || j.error_description || j.error || ""; } catch (e) {}
+      throw new Error(msg || "Request failed (" + r.status + ")");
+    }
+    return r;
+  }
+
+  /* ---------- data layer ---------- */
+  var arts = [];
+  async function listArts() { return (await (await api("/rest/v1/arts?select=*&order=position.asc")).json()); }
+  async function insertArt(row) {
+    var r = await api("/rest/v1/arts", { method: "POST", headers: { "Content-Type": "application/json", Prefer: "return=representation" }, body: JSON.stringify(row) });
+    return (await r.json())[0];
+  }
+  function patchArt(id, patch) {
+    return api("/rest/v1/arts?id=eq." + encodeURIComponent(id), { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) });
+  }
+  function deleteRow(id) { return api("/rest/v1/arts?id=eq." + encodeURIComponent(id), { method: "DELETE" }); }
+  function upload(bucket, path, blob, type) {
+    return api("/storage/v1/object/" + bucket + "/" + encPath(path), { method: "POST", headers: { "Content-Type": type || "application/octet-stream", "x-upsert": "true", "cache-control": "max-age=31536000" }, body: blob });
+  }
+  async function removeFiles(bucket, paths) {
+    paths = paths.filter(Boolean);
+    if (!paths.length) return;
+    try { await api("/storage/v1/object/" + bucket, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prefixes: paths }) }); } catch (e) { /* leftovers are harmless */ }
+  }
+  async function fetchOriginal(path) { return (await api("/storage/v1/object/authenticated/" + ORIGINALS_BUCKET + "/" + encPath(path))).blob(); }
+
+  /* ---------- login / logout ---------- */
+  var loginBusy = false;
+  function showLogin(msg) { $("dash").hidden = true; $("login").hidden = false; $("loginMsg").textContent = msg || ""; closeEditor(true); }
+  function signOut(msg) { setSession(null); arts = []; showLogin(msg); }
+  async function enterDash() { $("login").hidden = true; $("dash").hidden = false; await refresh(); }
+  $("logout").addEventListener("click", function () { signOut(""); });
+  $("loginForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    if (loginBusy) return;
+    if (!configured) { $("loginMsg").textContent = "Not set up yet: add your Supabase URL and key at the top of this file (see SETUP.md)."; return; }
+    loginBusy = true; $("loginMsg").textContent = "";
+    try {
+      var r = await fetch(base + "/auth/v1/token?grant_type=password", { method: "POST", headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ email: ADMIN_EMAIL, password: $("pw").value }) });
+      if (r.status === 400 || r.status === 401) { await sleep(900); throw new Error("Wrong password."); }
+      if (r.status === 429) throw new Error("Too many tries. Wait a minute and try again.");
+      if (!r.ok) throw new Error("Login failed (" + r.status + ").");
+      setSession(await r.json()); $("pw").value = "";
+      await enterDash();
+    } catch (err) {
+      $("loginMsg").textContent = err instanceof TypeError ? "Can't reach the server. Check your connection and the URL in this file." : err.message;
+    } finally { loginBusy = false; }
+  });
+
+  /* ---------- library ---------- */
+  async function refresh() {
+    try { arts = await listArts(); } catch (e) { if (session) toast(e.message, true); return; }
+    renderList();
+  }
+  function renderList() {
+    var box = $("list"); box.textContent = "";
+    if (!arts.length) { box.appendChild(el("p", "empty", "No art yet. Upload your first piece!")); return; }
+    arts.forEach(function (a, i) {
+      var row = el("div", "item" + (a.published ? "" : " hiddenart"));
+      var th = el("div", "thumb"); var im = el("img"); im.src = publicUrl(a.display_path); im.alt = ""; im.loading = "lazy"; th.appendChild(im);
+      var info = el("div", "info"); var t = el("div", "t", a.title || "Untitled");
+      if (!a.published) t.appendChild(el("span", "badge", "Hidden"));
+      info.appendChild(t); info.appendChild(el("div", "d", a.description || "No description"));
+      var acts = el("div", "acts");
+      function btn(label, fn, dis) { var b = el("button", "btn small"); b.type = "button"; b.appendChild(el("span", "label", label)); b.disabled = !!dis; b.addEventListener("click", fn); acts.appendChild(b); return b; }
+      btn("Edit", function () { openEditor(a); });
+      btn("\u2191", function () { move(i, -1); }, i === 0).setAttribute("aria-label", "Move up");
+      btn("\u2193", function () { move(i, 1); }, i === arts.length - 1).setAttribute("aria-label", "Move down");
+      btn(a.published ? "Hide" : "Show", function () { togglePub(a); });
+      btn("Delete", function () { remove(a); });
+      row.appendChild(th); row.appendChild(info); row.appendChild(acts); box.appendChild(row);
+    });
+  }
+  async function move(i, d) {
+    var a = arts[i], b = arts[i + d]; if (!a || !b) return;
+    var pa = a.position, pb = b.position;
+    if (pa === pb) pb = pa + d;
+    try { await Promise.all([patchArt(a.id, { position: pb }), patchArt(b.id, { position: pa })]); await refresh(); } catch (e) { toast(e.message, true); }
+  }
+  async function togglePub(a) {
+    try { await patchArt(a.id, { published: !a.published, updated_at: new Date().toISOString() }); toast(a.published ? "Hidden from the site" : "Now visible on the site"); await refresh(); } catch (e) { toast(e.message, true); }
+  }
+  async function remove(a) {
+    if (!confirm("Delete \"" + (a.title || "Untitled") + "\"?\nThis removes it from your website and from storage. It can't be undone.")) return;
+    try {
+      await deleteRow(a.id);
+      await removeFiles(PUBLIC_BUCKET, [a.display_path]); await removeFiles(ORIGINALS_BUCKET, [a.original_path]);
+      toast("Deleted"); await refresh();
+    } catch (e) { toast(e.message, true); }
+  }
+
+  /* ---------- editor / cropper ---------- */
+  var ed = null, drag = null;
+  var stage = $("stage"), stageImg = $("stageImg"), frame = $("frame"), zoom = $("zoom");
+  var RATIOS = { "1:1": 1, "4:5": 4 / 5, "3:4": 3 / 4, "16:9": 16 / 9, "3:1": 3 };
+  function ratioValue() { return ed.aspect === "orig" ? ed.iw / ed.ih : RATIOS[ed.aspect]; }
+
+  function loadImage(src) {
+    return new Promise(function (res, rej) { var i = new Image(); i.onload = function () { res(i); }; i.onerror = function () { rej(new Error("That file couldn't be read as an image.")); }; i.src = src; });
+  }
+  async function setImage(blob, keepCrop) {
+    if (ed.url) URL.revokeObjectURL(ed.url);
+    ed.url = URL.createObjectURL(blob);
+    ed.img = await loadImage(ed.url);
+    ed.iw = ed.img.naturalWidth; ed.ih = ed.img.naturalHeight;
+    stageImg.src = ed.url;
+    if (!keepCrop) { ed.z = 1; ed.cx = .5; ed.cy = .5; }
+    zoom.value = ed.z; syncRatioButtons(); layout();
+  }
+  function syncRatioButtons() {
+    [].forEach.call($("ratios").children, function (b) { b.setAttribute("aria-pressed", String(b.dataset.r === ed.aspect)); });
+  }
+  function layout() {
+    if (!ed || !ed.img) return;
+    var sw = stage.clientWidth, sh = stage.clientHeight, pad = 24, A = ratioValue(), mw = sw - pad * 2, mh = sh - pad * 2, fw, fh;
+    if (mw / mh > A) { fh = mh; fw = fh * A; } else { fw = mw; fh = fw / A; }
+    ed.fw = fw; ed.fh = fh; ed.s0 = Math.max(fw / ed.iw, fh / ed.ih);
+    frame.style.width = fw + "px"; frame.style.height = fh + "px";
+    frame.style.left = (sw - fw) / 2 + "px"; frame.style.top = (sh - fh) / 2 + "px";
+    draw();
+  }
+  function draw() {
+    var s = ed.s0 * ed.z, cw = ed.fw / s, ch = ed.fh / s;
+    var mx = cw / 2 / ed.iw, my = ch / 2 / ed.ih;
+    ed.cx = Math.min(1 - mx, Math.max(mx, ed.cx)); ed.cy = Math.min(1 - my, Math.max(my, ed.cy));
+    var left = stage.clientWidth / 2 - ed.cx * ed.iw * s, top = stage.clientHeight / 2 - ed.cy * ed.ih * s;
+    stageImg.style.width = ed.iw * s + "px"; stageImg.style.height = ed.ih * s + "px";
+    stageImg.style.transform = "translate(" + left + "px," + top + "px)";
+  }
+  function setZoom(z) { ed.z = Math.min(4, Math.max(1, z)); zoom.value = ed.z; ed.dirty = true; draw(); }
+
+  stage.addEventListener("pointerdown", function (e) {
+    if (!ed || !ed.img) return;
+    stage.setPointerCapture(e.pointerId); stage.classList.add("grabbing");
+    drag = { x: e.clientX, y: e.clientY, cx: ed.cx, cy: ed.cy };
+  });
+  stage.addEventListener("pointermove", function (e) {
+    if (!drag) return;
+    var s = ed.s0 * ed.z;
+    ed.cx = drag.cx - (e.clientX - drag.x) / (ed.iw * s); ed.cy = drag.cy - (e.clientY - drag.y) / (ed.ih * s);
+    ed.dirty = true; draw();
+  });
+  function endDrag() { drag = null; stage.classList.remove("grabbing"); }
+  stage.addEventListener("pointerup", endDrag); stage.addEventListener("pointercancel", endDrag);
+  stage.addEventListener("wheel", function (e) { if (!ed || !ed.img) return; e.preventDefault(); setZoom(ed.z * Math.exp(-e.deltaY * 0.0015)); }, { passive: false });
+  zoom.addEventListener("input", function () { if (ed && ed.img) setZoom(parseFloat(zoom.value)); });
+  $("ratios").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-r]"); if (!b || !ed || !ed.img) return;
+    ed.aspect = b.dataset.r; ed.dirty = true; syncRatioButtons(); layout();
+  });
+  window.addEventListener("resize", layout);
+
+  async function openEditor(artOrFile) {
+    var isFile = artOrFile instanceof File;
+    if (isFile) {
+      if (!/^image\//.test(artOrFile.type)) { toast("Please choose an image file.", true); return; }
+      if (artOrFile.size > MAX_BYTES) { toast("That image is over 25 MB. Please shrink it first.", true); return; }
+    }
+    ed = { art: isFile ? null : artOrFile, file: isFile ? artOrFile : null, aspect: "orig", z: 1, cx: .5, cy: .5, dirty: isFile, busy: false, url: null, img: null };
+    $("edTitle").textContent = isFile ? "Upload art" : "Edit art";
+    $("fTitle").value = isFile ? "" : (artOrFile.title || ""); $("fDesc").value = isFile ? "" : (artOrFile.description || ""); $("fPub").checked = isFile ? true : !!artOrFile.published;
+    $("replaceBtn").hidden = isFile;
+    $("editor").hidden = false; document.body.style.overflow = "hidden";
+    try {
+      var blob;
+      if (isFile) blob = artOrFile;
+      else {
+        var c = artOrFile.crop || {};
+        ed.aspect = c.aspect && (c.aspect === "orig" || RATIOS[c.aspect]) ? c.aspect : "orig";
+        ed.z = c.zoom || 1; ed.cx = c.cx != null ? c.cx : .5; ed.cy = c.cy != null ? c.cy : .5;
+        $("edSave").disabled = true; blob = await fetchOriginal(artOrFile.original_path);
+      }
+      await setImage(blob, !isFile); $("edSave").disabled = false;
+    } catch (e) { toast(e.message, true); closeEditor(true); }
+  }
+  function closeEditor(force) {
+    if (ed && ed.busy && !force) return;
+    if (ed && ed.url) URL.revokeObjectURL(ed.url);
+    ed = null; $("editor").hidden = true; document.body.style.overflow = ""; stageImg.removeAttribute("src");
+  }
+  $("edCancel").addEventListener("click", function () { closeEditor(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("editor").hidden) closeEditor(); });
+  $("replaceBtn").addEventListener("click", function () { $("replaceInput").click(); });
+  $("replaceInput").addEventListener("change", async function () {
+    var f = this.files[0]; this.value = ""; if (!f || !ed) return;
+    if (!/^image\//.test(f.type)) { toast("Please choose an image file.", true); return; }
+    if (f.size > MAX_BYTES) { toast("That image is over 25 MB.", true); return; }
+    try { ed.file = f; ed.dirty = true; await setImage(f, false); } catch (e) { toast(e.message, true); }
+  });
+
+  function toBlob(canvas) {
+    return new Promise(function (res, rej) { canvas.toBlob(function (b) { b ? res(b) : rej(new Error("Couldn't encode the image.")); }, "image/webp", 0.9); });
+  }
+  async function renderDisplay() {
+    var s = ed.s0 * ed.z, cw = ed.fw / s, ch = ed.fh / s;
+    var sx = Math.min(ed.iw - cw, Math.max(0, ed.cx * ed.iw - cw / 2)), sy = Math.min(ed.ih - ch, Math.max(0, ed.cy * ed.ih - ch / 2));
+    var f = Math.min(1, MAX_SIDE / Math.max(cw, ch)), ow = Math.max(1, Math.round(cw * f)), oh = Math.max(1, Math.round(ch * f));
+    var c = document.createElement("canvas"); c.width = ow; c.height = oh;
+    var x = c.getContext("2d"); x.imageSmoothingQuality = "high"; x.drawImage(ed.img, sx, sy, cw, ch, 0, 0, ow, oh);
+    var b = await toBlob(c);
+    return { blob: b, w: ow, h: oh, ext: b.type === "image/webp" ? "webp" : "png" };
+  }
+  function cropState() { return { aspect: ed.aspect, zoom: Math.round(ed.z * 1000) / 1000, cx: Math.round(ed.cx * 10000) / 10000, cy: Math.round(ed.cy * 10000) / 10000 }; }
+
+  $("edSave").addEventListener("click", async function () {
+    if (!ed || ed.busy || !ed.img) return;
+    ed.busy = true; var btn = $("edSave"), lab = btn.querySelector(".label"); btn.disabled = true; lab.textContent = "Saving\u2026";
+    var title = $("fTitle").value.trim(), description = $("fDesc").value.trim(), published = $("fPub").checked;
+    var made = [];   /* files uploaded during this save, removed again if something fails */
+    try {
+      var ts = Date.now();
+      if (!ed.art) {
+        var id = crypto.randomUUID(), opath = id + "/original-" + ts + "." + extFor(ed.file);
+        var d = await renderDisplay(), dpath = id + "/display-" + ts + "." + d.ext;
+        await upload(ORIGINALS_BUCKET, opath, ed.file, ed.file.type); made.push([ORIGINALS_BUCKET, opath]);
+        await upload(PUBLIC_BUCKET, dpath, d.blob, d.blob.type); made.push([PUBLIC_BUCKET, dpath]);
+        var pos = arts.length ? Math.min.apply(null, arts.map(function (a) { return a.position; })) - 1 : 0;
+        await insertArt({ id: id, title: title, description: description, position: pos, published: published, crop: cropState(), original_path: opath, display_path: dpath, display_w: d.w, display_h: d.h });
+        toast("Uploaded!");
+      } else {
+        var a = ed.art, patch = { title: title, description: description, published: published, updated_at: new Date().toISOString() }, oldDisplay = null, oldOriginal = null;
+        if (ed.file) {
+          var np = a.id + "/original-" + ts + "." + extFor(ed.file);
+          await upload(ORIGINALS_BUCKET, np, ed.file, ed.file.type); made.push([ORIGINALS_BUCKET, np]);
+          patch.original_path = np; oldOriginal = a.original_path;
+        }
+        if (ed.dirty) {
+          var r = await renderDisplay(), rp = a.id + "/display-" + ts + "." + r.ext;
+          await upload(PUBLIC_BUCKET, rp, r.blob, r.blob.type); made.push([PUBLIC_BUCKET, rp]);
+          patch.display_path = rp; patch.display_w = r.w; patch.display_h = r.h; patch.crop = cropState(); oldDisplay = a.display_path;
+        }
+        await patchArt(a.id, patch);
+        await removeFiles(PUBLIC_BUCKET, [oldDisplay]); await removeFiles(ORIGINALS_BUCKET, [oldOriginal]);
+        toast("Saved");
+      }
+      ed.busy = false; closeEditor(true); await refresh();
+    } catch (e) {
+      for (var i = 0; i < made.length; i++) await removeFiles(made[i][0], [made[i][1]]);
+      if (ed) { ed.busy = false; btn.disabled = false; lab.textContent = "Save"; }
+      if (!/Session ended/.test(e.message)) toast(e.message, true);
+    }
+    lab.textContent = "Save"; btn.disabled = false;
+  });
+
+  /* ---------- upload entry points ---------- */
+  $("addBtn").addEventListener("click", function () { $("fileInput").click(); });
+  $("fileInput").addEventListener("change", function () { var f = this.files[0]; this.value = ""; if (f) openEditor(f); });
+  document.addEventListener("dragover", function (e) { if (!$("dash").hidden && $("editor").hidden) e.preventDefault(); });
+  document.addEventListener("drop", function (e) {
+    if ($("dash").hidden || !$("editor").hidden) return;
+    e.preventDefault(); var f = e.dataTransfer && e.dataTransfer.files[0]; if (f) openEditor(f);
+  });
+
+  /* ---------- start ---------- */
+  if (!configured) $("loginMsg").textContent = "Not set up yet: add your Supabase URL and key at the top of this file (see SETUP.md).";
+  if (configured && session) { enterDash().then(function () { if (!session) showLogin(""); }).catch(function () { signOut(""); }); }
+})();
+</script>
+</body>
+</html>
